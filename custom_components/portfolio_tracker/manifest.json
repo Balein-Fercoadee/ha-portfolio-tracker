@@ -2,6 +2,7 @@
   "domain": "portfolio_tracker",
   "name": "Investment Portfolio",
   "codeowners": ["@Balein-Fercoadee"],
+  "categories": ["finance"],
   "config_flow": true,
   "dependencies": ["http", "websocket_api"],
   "documentation": "https://github.com/Balein-Fercoadee/ha-portfolio-tracker",

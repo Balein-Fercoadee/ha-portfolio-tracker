@@ -18,4 +18,4 @@
 ## 4. Documentation and Integration Verification
 
 - [x] 4.1 Add HACS repository metadata and document adding this GitHub repository as a HACS custom integration, installing/updating it, setup, supported configuration, quote limitations, and single-currency behavior; verify the documented steps match the repository structure and config flow.
-- [ ] 4.2 Run unit and Home Assistant integration tests without live Yahoo Finance requests, validate the integration manifest and release version metadata, and run HACS validation in CI; verify all portfolio and HACS installation requirements pass.
+- [x] 4.2 Run unit and Home Assistant integration tests without live Yahoo Finance requests, validate the integration manifest and release version metadata, and run HACS validation in CI; verify all portfolio and HACS installation requirements pass.

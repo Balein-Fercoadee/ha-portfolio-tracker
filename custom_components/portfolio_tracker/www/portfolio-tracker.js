@@ -23,6 +23,9 @@ class PortfolioTrackerPanel extends HTMLElement {
       });
       this._holdings = portfolio.holdings;
       this._currency = portfolio.currency;
+      this._interval = portfolio.scan_interval;
+      this._minInterval = portfolio.min_scan_interval;
+      this._maxInterval = portfolio.max_scan_interval;
       this._render();
     } catch (error) {
       this._showError(error);
@@ -106,8 +109,15 @@ class PortfolioTrackerPanel extends HTMLElement {
       <main>
         <h1>Investment Portfolio</h1>
         <p id="currency"></p>
+        <form id="interval-form">
+          <label>
+            Update frequency (minutes)
+            <input id="interval" name="interval" type="number" step="1" required />
+          </label>
+          <button id="save-interval" type="submit">Save</button>
+        </form>
         <p id="message" role="status" aria-live="polite"></p>
-        <form>
+        <form id="holding-form">
           <label>
             Symbol
             <input id="symbol" name="symbol" autocomplete="off" required />
@@ -125,11 +135,56 @@ class PortfolioTrackerPanel extends HTMLElement {
       </main>
     `;
 
-    this.shadowRoot.querySelector("form").addEventListener("submit", (event) => {
+    this.shadowRoot.querySelector("#holding-form").addEventListener("submit", (event) => {
       return this._addHolding(event);
     });
+    this.shadowRoot.querySelector("#interval-form").addEventListener("submit", (event) => {
+      return this._saveInterval(event);
+    });
     this._renderHoldings();
+    this._renderInterval();
     this._setBusy(this._busy);
+  }
+
+  _renderInterval() {
+    const input = this.shadowRoot.querySelector("#interval");
+    input.min = String(this._minInterval ?? 10);
+    input.max = String(this._maxInterval ?? 120);
+    if (this._interval !== undefined) {
+      input.value = String(this._interval);
+    }
+  }
+
+  async _saveInterval(event) {
+    event.preventDefault();
+    if (this._busy) {
+      return;
+    }
+
+    const input = this.shadowRoot.querySelector("#interval");
+    const minutes = Number(input.value);
+    const min = this._minInterval ?? 10;
+    const max = this._maxInterval ?? 120;
+    if (!Number.isInteger(minutes) || minutes < min || minutes > max) {
+      this._setMessage(`Update frequency must be between ${min} and ${max} minutes.`, true);
+      return;
+    }
+
+    this._busy = true;
+    this._setBusy(true);
+    try {
+      const result = await this._hass.callWS({
+        type: "portfolio_tracker/set_scan_interval",
+        minutes,
+      });
+      this._interval = result.scan_interval;
+      this._setMessage("Update frequency saved.", false);
+    } catch (error) {
+      this._showError(error);
+    } finally {
+      this._busy = false;
+      this._setBusy(false);
+    }
   }
 
   _renderHoldings() {
@@ -178,6 +233,8 @@ class PortfolioTrackerPanel extends HTMLElement {
     this.shadowRoot.querySelector("#symbol").disabled = busy;
     this.shadowRoot.querySelector("#amount").disabled = busy;
     this.shadowRoot.querySelector("#add").disabled = busy;
+    this.shadowRoot.querySelector("#interval").disabled = busy;
+    this.shadowRoot.querySelector("#save-interval").disabled = busy;
     for (const button of this.shadowRoot.querySelectorAll(".remove")) {
       button.disabled = busy;
     }

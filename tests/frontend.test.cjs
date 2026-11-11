@@ -38,7 +38,10 @@ class FakeElement {
 class FakeShadowRoot extends FakeElement {
   set innerHTML(_html) {
     this.elements = {
-      form: new FakeElement("form"),
+      "#holding-form": new FakeElement("form"),
+      "#interval-form": new FakeElement("form"),
+      "#interval": new FakeElement("input"),
+      "#save-interval": new FakeElement("button"),
       "#symbol": new FakeElement("input"),
       "#amount": new FakeElement("input"),
       "#add": new FakeElement("button"),
@@ -122,7 +125,7 @@ test("panel adds a pair and removes it with the row minus action", async () => {
   panel.shadowRoot.querySelector("#symbol").value = "AAPL";
   panel.shadowRoot.querySelector("#amount").value = "2.5";
   await panel.shadowRoot
-    .querySelector("form")
+    .querySelector("#holding-form")
     .dispatch("submit", { preventDefault() {} });
 
   assert.equal(panel.shadowRoot.querySelector("#holdings").children.length, 1);
@@ -162,7 +165,7 @@ test("panel displays backend validation errors", async () => {
   panel.shadowRoot.querySelector("#symbol").value = "AAPL";
   panel.shadowRoot.querySelector("#amount").value = "1";
   await panel.shadowRoot
-    .querySelector("form")
+    .querySelector("#holding-form")
     .dispatch("submit", { preventDefault() {} });
 
   assert.equal(
@@ -173,4 +176,42 @@ test("panel displays backend validation errors", async () => {
     panel.shadowRoot.querySelector("#holdings").children[0].textContent,
     "No holdings yet.",
   );
+});
+
+test("panel saves a valid update frequency and rejects out-of-range values", async () => {
+  const PortfolioPanel = customElements.registry.get("portfolio-tracker-panel");
+  const panel = new PortfolioPanel();
+  const calls = [];
+  panel.hass = {
+    callWS: async (message) => {
+      calls.push(message);
+      if (message.type.endsWith("/get_holdings")) {
+        return {
+          currency: "USD",
+          holdings: [],
+          scan_interval: 30,
+          min_scan_interval: 10,
+          max_scan_interval: 120,
+        };
+      }
+      return { scan_interval: message.minutes };
+    },
+  };
+  await Promise.resolve();
+  await Promise.resolve();
+  await new Promise((resolve) => setImmediate(resolve));
+
+  const input = panel.shadowRoot.querySelector("#interval");
+  assert.equal(input.value, "30");
+  const form = panel.shadowRoot.querySelector("#interval-form");
+
+  input.value = "5";
+  await form.dispatch("submit", { preventDefault() {} });
+  assert.equal(calls.length, 1);
+  assert.equal(panel.shadowRoot.querySelector("#message").dataset.error, "true");
+
+  input.value = "60";
+  await form.dispatch("submit", { preventDefault() {} });
+  assert.equal(calls[1].type, "portfolio_tracker/set_scan_interval");
+  assert.equal(calls[1].minutes, 60);
 });

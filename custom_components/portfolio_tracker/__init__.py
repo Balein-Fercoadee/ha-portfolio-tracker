@@ -1,5 +1,6 @@
 """Home Assistant integration for an investment portfolio."""
 
+from datetime import timedelta
 from pathlib import Path
 
 from homeassistant.components import frontend
@@ -14,8 +15,11 @@ from . import websocket
 from .const import (
     CONF_CURRENCY,
     CONF_HOLDINGS,
-    DEFAULT_SCAN_INTERVAL,
+    CONF_SCAN_INTERVAL,
+    DEFAULT_SCAN_INTERVAL_MINUTES,
     DOMAIN,
+    MAX_SCAN_INTERVAL,
+    MIN_SCAN_INTERVAL,
     PANEL_ELEMENT,
     PANEL_JS_PATH,
     PANEL_URL,
@@ -53,6 +57,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         holdings = load_holdings(settings[CONF_HOLDINGS])
     except (KeyError, ValueError) as err:
         raise ConfigEntryNotReady("Invalid portfolio configuration") from err
+    scan_interval = settings.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL_MINUTES)
+    if (
+        not isinstance(scan_interval, int)
+        or isinstance(scan_interval, bool)
+        or not MIN_SCAN_INTERVAL <= scan_interval <= MAX_SCAN_INTERVAL
+    ):
+        raise ConfigEntryNotReady("Invalid update frequency")
 
     coordinator = PortfolioCoordinator(
         hass,
@@ -60,7 +71,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         entry,
         holdings,
         currency,
-        DEFAULT_SCAN_INTERVAL,
+        timedelta(minutes=scan_interval),
     )
     await coordinator.async_config_entry_first_refresh()
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = coordinator

@@ -4,9 +4,9 @@
   "codeowners": ["@Balein-Fercoadee"],
   "config_flow": true,
   "documentation": "https://github.com/Balein-Fercoadee/ha-portfolio-tracker",
-  "issue_tracker": "https://github.com/Balein-Fercoadee/ha-portfolio-tracker/issues",
   "integration_type": "service",
   "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/Balein-Fercoadee/ha-portfolio-tracker/issues",
   "requirements": [],
   "version": "0.1.0"
 }

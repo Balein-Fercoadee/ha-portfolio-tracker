@@ -3,11 +3,14 @@
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryNotReady
+from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .const import CONF_CURRENCY, CONF_HOLDINGS, DEFAULT_SCAN_INTERVAL, DOMAIN, PLATFORMS
 from .coordinator import PortfolioCoordinator
 from .models import load_holdings, validate_currency
+
+CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
 
 async def async_setup(hass: HomeAssistant, config: dict) -> bool:

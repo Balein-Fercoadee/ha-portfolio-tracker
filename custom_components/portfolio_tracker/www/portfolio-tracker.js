@@ -111,7 +111,7 @@ class PortfolioTrackerPanel extends HTMLElement {
         <p id="currency"></p>
         <form id="interval-form">
           <label>
-            Update frequency (minutes)
+            Update frequency (minutes, min: ${this._minInterval ?? 10}, max: ${this._maxInterval ?? 120})
             <input id="interval" name="interval" type="number" step="1" required />
           </label>
           <button id="save-interval" type="submit">Save</button>
@@ -123,13 +123,13 @@ class PortfolioTrackerPanel extends HTMLElement {
             <input id="symbol" name="symbol" autocomplete="off" required />
           </label>
           <label>
-            Amount
+            Quantity
             <input id="amount" name="amount" type="number" min="0" step="any" required />
           </label>
           <button id="add" type="submit" aria-label="Add holding">+</button>
         </form>
         <section aria-label="Configured holdings">
-          <h2>Holdings</h2>
+          <h2>Holdings (Symbol — Quantity)</h2>
           <div id="holdings"></div>
         </section>
       </main>

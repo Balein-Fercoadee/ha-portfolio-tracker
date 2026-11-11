@@ -1,9 +1,11 @@
 """Tests for config-entry setup and option updates."""
 
 from decimal import Decimal
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, patch
 
 from homeassistant.components import frontend
+from homeassistant.config_entries import ConfigEntryState
+from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers import entity_registry as er
 import pytest
 
@@ -63,14 +65,19 @@ async def test_setup_and_removing_final_holding_removes_entities(
     )
     assert script_response.status == 200
     assert "portfolio-tracker-panel" in await script_response.text()
-    await client.send_json_auto_id(
-        {"type": f"{DOMAIN}/remove_holding", "symbol": "AAPL"}
-    )
-    response = await client.receive_json()
-    assert response["success"] is True
-    await hass.async_block_till_done()
+    with patch.object(
+        frontend, "async_remove_panel", wraps=frontend.async_remove_panel
+    ) as remove_panel:
+        await client.send_json_auto_id(
+            {"type": f"{DOMAIN}/remove_holding", "symbol": "AAPL"}
+        )
+        response = await client.receive_json()
+        assert response["success"] is True
+        await hass.async_block_till_done()
+        remove_panel.assert_not_called()
 
     assert frontend.async_panel_exists(hass, PANEL_URL)
+    assert hass.data[frontend.DATA_PANELS][PANEL_URL] is panel
     holding_entities = [
         entity
         for entity in registry.entities.values()
@@ -87,14 +94,19 @@ async def test_setup_and_removing_final_holding_removes_entities(
     assert hass.states.get(total.entity_id).state == "unavailable"
     assert get_quote.await_count == 1
 
-    await client.send_json_auto_id(
-        {"type": f"{DOMAIN}/add_holding", "symbol": "AAPL", "amount": "3"}
-    )
-    response = await client.receive_json()
-    assert response["success"] is True
-    await hass.async_block_till_done()
+    with patch.object(
+        frontend, "async_remove_panel", wraps=frontend.async_remove_panel
+    ) as remove_panel:
+        await client.send_json_auto_id(
+            {"type": f"{DOMAIN}/add_holding", "symbol": "AAPL", "amount": "3"}
+        )
+        response = await client.receive_json()
+        assert response["success"] is True
+        await hass.async_block_till_done()
+        remove_panel.assert_not_called()
     await client.close()
 
+    assert hass.data[frontend.DATA_PANELS][PANEL_URL] is panel
     holding_entities = [
         entity
         for entity in registry.entities.values()
@@ -125,4 +137,27 @@ async def test_unloading_entry_removes_panel(
     assert frontend.async_panel_exists(hass, PANEL_URL)
 
     assert await hass.config_entries.async_unload(entry.entry_id)
+    assert not frontend.async_panel_exists(hass, PANEL_URL)
+
+
+async def test_failed_options_reload_removes_panel(hass, enable_custom_integrations):
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        title="Investment Portfolio",
+        unique_id=DOMAIN,
+        data={"currency": "USD", "holdings": []},
+    )
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+
+    with patch(
+        "custom_components.portfolio_tracker.PortfolioCoordinator.async_config_entry_first_refresh",
+        new=AsyncMock(side_effect=ConfigEntryNotReady),
+    ):
+        hass.config_entries.async_update_entry(
+            entry, options={"currency": "USD", "holdings": []}
+        )
+        await hass.async_block_till_done()
+
+    assert entry.state is ConfigEntryState.SETUP_RETRY
     assert not frontend.async_panel_exists(hass, PANEL_URL)

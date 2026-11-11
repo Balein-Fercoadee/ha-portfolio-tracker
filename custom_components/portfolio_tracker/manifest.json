@@ -1,0 +1,13 @@
+{
+  "domain": "portfolio_tracker",
+  "name": "Investment Portfolio",
+  "codeowners": ["@Balein-Fercoadee"],
+  "config_flow": true,
+  "documentation": "https://github.com/Balein-Fercoadee/ha-portfolio-tracker",
+  "integration_type": "service",
+  "issue_tracker": "https://github.com/Balein-Fercoadee/ha-portfolio-tracker/issues",
+  "iot_class": "cloud_polling",
+  "homeassistant": "2024.1.0",
+  "requirements": [],
+  "version": "0.1.0"
+}

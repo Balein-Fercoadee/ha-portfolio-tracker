@@ -20,23 +20,5 @@
     "abort": {
       "already_configured": "The portfolio is already configured."
     }
-  },
-  "options": {
-    "step": {
-      "init": {
-        "title": "Manage investment holdings",
-        "description": "Edit the list to add, change, or remove holdings. Leave it empty to keep an empty portfolio.",
-        "data": {
-          "currency": "Portfolio currency (three-letter code)",
-          "holdings": "Holdings"
-        }
-      }
-    },
-    "error": {
-      "invalid_currency": "Enter a three-letter currency code.",
-      "invalid_holdings": "Enter each holding as SYMBOL,QUANTITY.",
-      "duplicate_symbol": "Each symbol can only be entered once.",
-      "invalid_quantity": "Each quantity must be a positive number."
-    }
   }
 }

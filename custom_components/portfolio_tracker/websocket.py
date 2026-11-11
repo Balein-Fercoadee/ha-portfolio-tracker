@@ -1,0 +1,153 @@
+"""Authenticated WebSocket commands for portfolio management."""
+
+import voluptuous as vol
+
+from homeassistant.components import websocket_api
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers import config_validation as cv
+
+from .const import CONF_CURRENCY, CONF_HOLDINGS, DOMAIN
+from .models import load_holdings, serialize_portfolio
+
+
+def async_register_commands(hass: HomeAssistant) -> None:
+    """Register portfolio management commands."""
+    websocket_api.async_register_command(hass, websocket_get_holdings)
+    websocket_api.async_register_command(hass, websocket_add_holding)
+    websocket_api.async_register_command(hass, websocket_remove_holding)
+
+
+@websocket_api.websocket_command(
+    {vol.Required("type"): f"{DOMAIN}/get_holdings"}
+)
+def websocket_get_holdings(hass, connection, msg):
+    """Return the configured portfolio to an administrator."""
+    if not _is_admin(connection, msg):
+        return
+    entry = _get_entry(hass, connection, msg)
+    if entry is None:
+        return
+    settings = entry.options or entry.data
+    connection.send_result(
+        msg["id"],
+        {
+            CONF_CURRENCY: settings[CONF_CURRENCY],
+            CONF_HOLDINGS: [
+                {"symbol": holding.symbol, "quantity": str(holding.quantity)}
+                for holding in load_holdings(settings[CONF_HOLDINGS])
+            ],
+        },
+    )
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): f"{DOMAIN}/add_holding",
+        vol.Required("symbol"): cv.string,
+        vol.Required("amount"): cv.string,
+    }
+)
+def websocket_add_holding(hass, connection, msg):
+    """Validate and persist a new holding."""
+    if not _is_admin(connection, msg):
+        return
+    entry = _get_entry(hass, connection, msg)
+    if entry is None:
+        return
+
+    settings = entry.options or entry.data
+    try:
+        current_holdings = load_holdings(settings[CONF_HOLDINGS])
+        lines = [
+            f"{holding.symbol},{holding.quantity}" for holding in current_holdings
+        ]
+        lines.append(f"{msg['symbol']},{msg['amount']}")
+        updated = serialize_portfolio(
+            settings[CONF_CURRENCY],
+            "\n".join(lines),
+            allow_empty=False,
+        )
+    except ValueError as err:
+        _send_validation_error(connection, msg, err)
+        return
+
+    hass.config_entries.async_update_entry(entry, options=updated)
+    connection.send_result(msg["id"], updated)
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): f"{DOMAIN}/remove_holding",
+        vol.Required("symbol"): cv.string,
+    }
+)
+def websocket_remove_holding(hass, connection, msg):
+    """Remove and persist a configured holding."""
+    if not _is_admin(connection, msg):
+        return
+    entry = _get_entry(hass, connection, msg)
+    if entry is None:
+        return
+
+    settings = entry.options or entry.data
+    try:
+        current_holdings = load_holdings(settings[CONF_HOLDINGS])
+        symbol = msg["symbol"].strip().upper()
+        if not any(holding.symbol == symbol for holding in current_holdings):
+            connection.send_error(
+                msg["id"],
+                websocket_api.ERR_NOT_FOUND,
+                "Holding not found",
+            )
+            return
+        remaining = "\n".join(
+            f"{holding.symbol},{holding.quantity}"
+            for holding in current_holdings
+            if holding.symbol != symbol
+        )
+        updated = serialize_portfolio(
+            settings[CONF_CURRENCY],
+            remaining,
+            allow_empty=True,
+        )
+    except ValueError as err:
+        _send_validation_error(connection, msg, err)
+        return
+
+    hass.config_entries.async_update_entry(entry, options=updated)
+    connection.send_result(msg["id"], updated)
+
+
+def _is_admin(connection, msg) -> bool:
+    """Ensure portfolio commands are limited to administrators."""
+    if connection.user is not None and connection.user.is_admin:
+        return True
+    connection.send_error(
+        msg["id"],
+        websocket_api.ERR_NOT_ALLOWED,
+        "Administrator access required",
+    )
+    return False
+
+
+def _get_entry(hass, connection, msg):
+    """Return the configured portfolio entry or report it missing."""
+    entries = hass.config_entries.async_entries(DOMAIN)
+    if entries:
+        return entries[0]
+    connection.send_error(
+        msg["id"],
+        websocket_api.ERR_NOT_FOUND,
+        "Portfolio is not configured",
+    )
+    return None
+
+
+def _send_validation_error(connection, msg, err: ValueError) -> None:
+    """Return a user-visible validation error."""
+    code = str(err)
+    connection.send_error(
+        msg["id"],
+        code,
+        code.replace("_", " "),
+    )

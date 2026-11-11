@@ -18,14 +18,16 @@ Copy `custom_components/portfolio_tracker` into the `custom_components` director
 
 ## Setup and holdings
 
-Add **Investment Portfolio** from **Settings → Devices & services → Add integration**. Choose a three-letter portfolio currency and enter one holding per line in `SYMBOL,QUANTITY` format, for example:
+Add **Investment Portfolio** from **Settings → Devices & services → Add integration**. Choose a three-letter portfolio currency and enter at least one initial holding per line in `SYMBOL,QUANTITY` format, for example:
 
 ```text
 AAPL,10
 MSFT,2.5
 ```
 
-Use the integration's options to add, edit, or remove holdings. Leave the holdings list empty to keep the portfolio configured without holdings; its total value sensor will be unavailable. Each holding must have a unique symbol and a positive quantity.
+After setup, open **Investment Portfolio** from the Home Assistant sidebar. The administrator-only panel lists each symbol and amount. Enter a symbol and amount, then select **+** to add it. Select **−** on a listed holding to remove it. To change a symbol or amount, remove the existing pair and add the updated pair. The panel validates each change and saves it to the integration; sensors and portfolio totals update after the integration reloads. Removing every holding is allowed, and the total value sensor will be unavailable until holdings are added again.
+
+Each symbol must be unique and each amount must be a positive number. The portfolio currency is selected during initial setup and is shared by all holdings.
 
 The integration creates a price and market-value sensor for each holding, along with a total portfolio value sensor. Values are reported in the selected portfolio currency. Quotes reported in a different currency are unavailable and are not included in the total.
 

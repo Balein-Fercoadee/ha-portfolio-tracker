@@ -6,7 +6,7 @@ Home Assistant users need a way to monitor the market value of investment holdin
 
 ## What Changes
 
-- Add a Home Assistant integration to add, edit, and remove manually configured investment symbols and quantities.
+- Add a dedicated Home Assistant frontend panel for managing holdings. Users enter a symbol and amount and activate a plus-sign action to add it to the visible list; each listed holding has a minus-sign action to remove it. To change a holding, remove it and add the updated symbol and amount.
 - Retrieve current prices from Yahoo Finance and expose per-holding and combined portfolio value in Home Assistant.
 - Package and document the integration for installation and updates through HACS as a custom repository.
 - Keep the initial portfolio in one currency; mixed-currency conversion and broker account synchronization are out of scope.
@@ -23,7 +23,8 @@ Home Assistant users need a way to monitor the market value of investment holdin
 
 ## Impact
 
-- Adds a Python custom integration for Home Assistant, including configuration, data retrieval, entities, and tests.
+- Adds a Python custom integration for Home Assistant, including configuration, data retrieval, entities, an integration-specific frontend panel, its authenticated backend interface, and tests.
+- Packages the frontend with the integration so it works without an externally hosted UI.
 - Adds HACS repository metadata and community-store installation documentation; users add the GitHub repository as a custom HACS repository.
 - Depends on Yahoo Finance price availability and must account for its limits and possible service changes.
 - The repository currently contains no integration code or existing capability specs; implementation conventions and compatibility targets will need to be established during design.

@@ -3,7 +3,6 @@
 import voluptuous as vol
 
 from homeassistant import config_entries
-from homeassistant.core import callback
 
 from .const import (
     CONF_CURRENCY,
@@ -11,7 +10,7 @@ from .const import (
     DEFAULT_CURRENCY,
     DOMAIN,
 )
-from .models import format_holdings, serialize_portfolio
+from .models import serialize_portfolio
 
 
 class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -49,58 +48,5 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             {
                 vol.Required(CONF_CURRENCY, default=DEFAULT_CURRENCY): str,
                 vol.Required(CONF_HOLDINGS): str,
-            }
-        )
-
-    @staticmethod
-    @callback
-    def async_get_options_flow(config_entry):
-        """Get the options flow for this config entry."""
-        return PortfolioOptionsFlow(config_entry)
-
-
-class PortfolioOptionsFlow(config_entries.OptionsFlow):
-    """Manage a portfolio's holdings."""
-
-    def __init__(self, config_entry):
-        """Initialize the options flow for the selected portfolio."""
-        self._entry = config_entry
-
-    async def async_step_init(self, user_input: dict | None = None):
-        """Update a portfolio's holdings."""
-        if user_input is not None:
-            try:
-                data = serialize_portfolio(
-                    user_input.get(CONF_CURRENCY),
-                    user_input.get(CONF_HOLDINGS),
-                    allow_empty=True,
-                )
-            except ValueError as err:
-                current = self._entry.options or self._entry.data
-                return self.async_show_form(
-                    step_id="init",
-                    data_schema=self._options_schema(current),
-                    errors={"base": str(err)},
-                )
-            return self.async_create_entry(title="", data=data)
-
-        current = self._entry.options or self._entry.data
-        return self.async_show_form(
-            step_id="init",
-            data_schema=self._options_schema(current),
-        )
-
-    @staticmethod
-    def _options_schema(current: dict) -> vol.Schema:
-        return vol.Schema(
-            {
-                vol.Required(
-                    CONF_CURRENCY,
-                    default=current.get(CONF_CURRENCY, DEFAULT_CURRENCY),
-                ): str,
-                vol.Required(
-                    CONF_HOLDINGS,
-                    default=format_holdings(current.get(CONF_HOLDINGS, [])),
-                ): str,
             }
         )

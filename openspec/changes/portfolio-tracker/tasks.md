@@ -19,4 +19,4 @@
 ## 4. Documentation and Integration Verification
 
 - [x] 4.1 Add HACS repository metadata and document custom-repository installation, initial setup, using the portfolio panel to add and remove holdings, quote limitations, and single-currency behavior; verify the steps match the packaged panel and config flow.
-- [ ] 4.2 Run unit, Home Assistant integration, and frontend build/interaction tests without live Yahoo Finance requests, validate the integration manifest and release version metadata, and run HACS validation in CI; verify the portfolio panel and HACS custom-repository requirements.
+- [x] 4.2 Run unit, Home Assistant integration, and frontend build/interaction tests without live Yahoo Finance requests, validate the integration manifest and release version metadata, and run HACS validation in CI; verify the portfolio panel and HACS custom-repository requirements.

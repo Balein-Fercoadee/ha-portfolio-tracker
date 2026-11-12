@@ -54,6 +54,8 @@ Quotes are fetched from Yahoo Finance on a 30-minute schedule (defualt time that
 
 Once holdings have been added, next step is to do something useful with the data. Included is a [simple example](examples/portfolio-overview.yaml) of what to do with the sensors in a HA card.
 
+See the [sensor entity schema](docs/sensor-schema.md) for available values and attributes.
+
 ## Tests
 
 With Home Assistant and pytest installed in your Python environment, run:

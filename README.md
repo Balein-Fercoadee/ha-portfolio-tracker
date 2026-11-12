@@ -50,6 +50,10 @@ For each holding a price and market-value sensor is created when saved. The tota
 
 Quotes are fetched from Yahoo Finance on a 30-minute schedule (defualt time that can be changed). Yahoo Finance's quote endpoint is unofficial and may be delayed, unavailable, or subject to change or throttling. This integration does not connect to broker accounts and is not intended for trading or real-time pricing.
 
+## Uses
+
+Once holdings have been added, next step is to do something useful with the data. Included is a [simple example](examples/portfolio-overview.yaml) of what to do with the sensors in a HA card.
+
 ## Tests
 
 With Home Assistant and pytest installed in your Python environment, run:

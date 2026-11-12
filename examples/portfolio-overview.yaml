@@ -1,0 +1,33 @@
+# Prototype: paste this entire card into a dashboard's Manual card editor.
+# Replace the example entity IDs below with your actual sensor entity IDs.
+# Add or remove holding pairs in the list to match your portfolio.
+# Allocation uses the complete portfolio total, even if this list is incomplete.
+type: markdown
+title: Investment Portfolio
+content: |
+  {% set total_entity = 'sensor.investment_portfolio_total_value' %}
+  {% set holdings = [
+    ('AAPL', 'sensor.investment_portfolio_aapl_price', 'sensor.investment_portfolio_aapl_market_value'),
+    ('MSFT', 'sensor.investment_portfolio_msft_price', 'sensor.investment_portfolio_msft_market_value')
+  ] %}
+  {% set total = states(total_entity) %}
+  {% set currency = state_attr(total_entity, 'currency') or '' %}
+
+  **Total value**
+
+  {% if is_number(total) %}
+  ### {{ '{:,.2f}'.format(total | float) }} {{ currency }}
+  {% else %}
+  ### Unavailable
+  The portfolio total is unavailable when any holding cannot be valued.
+  {% endif %}
+
+  | Holding | Price | Quantity | Value | Allocation |
+  |:--------|------:|---------:|------:|-----------:|{% for symbol, price_entity, value_entity in holdings %}{% set price = states(price_entity) %}{% set value = states(value_entity) %}{% set quantity = state_attr(price_entity, 'quantity') %}
+  | **{{ symbol }}** | {% if is_number(price) %}{{ '{:,.2f}'.format(price | float) }} {{ currency }}{% else %}Unavailable{% endif %} | {{ quantity if quantity is not none else '—' }} | {% if is_number(value) %}{{ '{:,.2f}'.format(value | float) }} {{ currency }}{% else %}Unavailable{% endif %} | {% if is_number(value) and is_number(total) and (total | float) > 0 %}{{ '{:.1f}'.format((value | float) / (total | float) * 100) }}%{% else %}—{% endif %} |{% endfor %}
+
+  **Quote timestamps**{% for symbol, price_entity, value_entity in holdings %}{% set updated = state_attr(price_entity, 'quote_updated_at') %}
+  - {{ symbol }}: {% if updated %}{{ as_local(as_datetime(updated)).strftime('%Y-%m-%d %H:%M %Z') }}{% else %}Unavailable{% endif %}{% endfor %}
+
+  Quote timestamps reflect the source's quote time, not necessarily the most
+  recent refresh attempt. Quotes may be delayed.
